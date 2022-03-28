@@ -16,6 +16,51 @@ const ui = new UI(administrarCitas);
 
 let editando = false;
 
+export let DB;
+
+export function baseDatos() {
+  window.onload = () => {
+    crearDB();
+  };
+}
+
+function crearDB() {
+  // Crear la base de datos
+  const crearDB = window.indexedDB.open("citas", 1);
+
+  // Si hay un error
+  crearDB.onerror = function () {
+    console.log("Hubo un error");
+  };
+
+  // Si todo esta ok
+  crearDB.onsuccess = function () {
+    console.log("DB creada");
+
+    DB = crearDB.result;
+    ui.imprimirCitas();
+  };
+
+  crearDB.onupgradeneeded = function (e) {
+    const db = e.target.result;
+
+    const objectStore = db.createObjectStore("citas", {
+      keyPath: "id",
+      autoIncrement: true,
+    });
+
+    objectStore.createIndex("mascota", "mascota", { unique: false });
+    objectStore.createIndex("propietario", "propietario", { unique: false });
+    objectStore.createIndex("telefono", "telefono", { unique: false });
+    objectStore.createIndex("fecha", "fecha", { unique: false });
+    objectStore.createIndex("hora", "hora", { unique: false });
+    objectStore.createIndex("sintomas", "sintomas", { unique: false });
+    objectStore.createIndex("id", "id", { unique: true });
+
+    console.log("DB creada y lista");
+  };
+}
+
 const citaObj = {
   mascota: "",
   propietario: "",
@@ -53,12 +98,19 @@ export function nuevaCita(e) {
     // Estamos editando
     administrarCitas.editarCita({ ...citaObj });
 
-    ui.imprimirAlerta("Guardado Correctamente");
+    //editar en el IndexDB
+    const transaction = DB.transaction(["citas"], "readwrite");
+    const objectStore = transaction.objectStore("citas");
+    objectStore.put(citaObj);
 
-    formulario.querySelector('button[type="submit"]').textContent =
-      "Crear Cita";
+    objectStore.oncomplete = () => {
+      ui.imprimirAlerta("Guardado Correctamente");
 
-    editando = false;
+      formulario.querySelector('button[type="submit"]').textContent =
+        "Crear Cita";
+
+      editando = false;
+    };
   } else {
     // Nuevo Registrando
 
@@ -68,12 +120,25 @@ export function nuevaCita(e) {
     // Añade la nueva cita
     administrarCitas.agregarCita({ ...citaObj });
 
-    // Mostrar mensaje de que todo esta bien...
-    ui.imprimirAlerta("Se agregó correctamente");
+    //Insertamos los registros en la base de datos de IndexDB
+    const transaction = DB.transaction(["citas"], "readwrite");
+
+    //agregamops el objectStore
+    const objectStore = transaction.objectStore("citas");
+
+    //insertamos todos los objectos creados al indexDB
+    objectStore.add(citaObj);
+
+    //Si se completo la accionde agregar entonces
+    transaction.oncomplete = function () {
+      console.log("cita agregada");
+      // Mostrar mensaje de que todo esta bien...
+      ui.imprimirAlerta("Se agregó correctamente");
+    };
   }
 
   // Imprimir el HTML de citas
-  ui.imprimirCitas(administrarCitas);
+  ui.imprimirCitas();
 
   // Reinicia el objeto para evitar futuros problemas de validación
   reiniciarObjeto();
@@ -93,9 +158,17 @@ export function reiniciarObjeto() {
 }
 
 export function eliminarCita(id) {
-  administrarCitas.eliminarCita(id);
+  const transaction = DB.transaction(["citas"], "readwrite");
+  const objectStore = transaction.objectStore("citas");
+  objectStore.delete(id);
 
-  ui.imprimirCitas(administrarCitas);
+  transaction.oncomplete = () => {
+    ui.imprimirCitas();
+  };
+
+  transaction.onerror = () => {
+    console.log("Hubo un error");
+  };
 }
 
 export function cargarEdicion(cita) {
