@@ -52,15 +52,16 @@ class UI {
     //Aquí accederemos a las filas de le base de datos y sera con openCursor
     objectStore.openCursor().onsuccess = function (e) {
       const cursor = e.target.result; //trae los valores que hay en la base de datos
-
+      //si existen valores en la base de datos, entonces mostraremos en la pantalla
       if (cursor) {
         const { mascota, propietario, telefono, fecha, hora, sintomas, id } =
           cursor.value;
+
         const divCita = document.createElement("div");
         divCita.classList.add("cita", "p-3");
         divCita.dataset.id = id;
 
-        // scRIPTING DE LOS ELEMENTOS...
+        // SCRIPTING DE LOS ELEMENTOS
         const mascotaParrafo = document.createElement("h2");
         mascotaParrafo.classList.add("card-title", "font-weight-bolder");
         mascotaParrafo.innerHTML = `${mascota}`;
