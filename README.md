@@ -5,4 +5,4 @@ View onlie demo [citas](https://rodrigomp88.github.io/Administra-pacientes-js/).
 
 ## Description
 
-administrador de citas para veterinaria con clases en javascript
+administrador CRUD de citas para veterinaria con clases y almacenamiento de datos en indexDB.
